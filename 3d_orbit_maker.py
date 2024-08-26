@@ -36,19 +36,35 @@ def Verlet(M, position0, velocity0, time_max, dt): #Using Verlet integrator
     velocity_vector_list_Verlet= np.vstack((velocity_vector_list_Verlet,velocity1))
 
     #Verlet Integration
-    for i in range(2,len(time_array)):
-        current_position=position_vector_list_Verlet[i-1] #Store current position
-        r = distance(current_position) #Calculate distance from origin
-        a = -G*M/r**3 * current_position #Acceleration due to Gravity
-        new_position = 2 * position_vector_list_Verlet[i-1] - position_vector_list_Verlet[i-2] + a*dt**2 #Verlet formula x_(n+1) = 2*x_(n) - x_(n-1) + a(n)*dt**2
-        position_vector_list_Verlet = np.vstack((position_vector_list_Verlet, new_position)) #Stack new position in list
+    for i in range(2, len(time_array)):
+        previous_position = position_vector_list_Verlet[i-2]
+        previous_velocity = velocity_vector_list_Verlet[i-2]
+        current_position = position_vector_list_Verlet[i-1]
+        current_velocity = velocity_vector_list_Verlet[i-1]
 
-    #Evaluate Velocity using central difference method
-    for i in range(1, len(position_vector_list_Verlet) - 1):
-        previous_position = position_vector_list_Verlet[i-1]
-        next_position = position_vector_list_Verlet[i+1]
-        new_velocity = (next_position-previous_position)/(2*dt)
+        # Calculate current acceleration
+        r_current = distance(current_position)
+        r_previous = distance(previous_position)
+        a_current = -G * M / r_current**3 * current_position
+        a_previous = -G * M / r_previous**3 * previous_position
+
+        # Calculate jerk (handling division by zero)
+        v_diff = current_velocity - previous_velocity
+        a_diff = a_current - a_previous
+
+        if np.linalg.norm(v_diff) != 0:
+            j_current = a_diff / dt
+        else:
+            j_current = np.zeros_like(a_current)
+
+        # New position and velocity using jerk-based Verlet integrator
+        new_position = current_position + current_velocity * dt + 0.5 * a_current * dt**2 + (1/6) * j_current * dt**3
+        new_velocity = current_velocity + a_current * dt + 0.5 * j_current * dt**2
+
+        # Stack new position and velocity
+        position_vector_list_Verlet = np.vstack((position_vector_list_Verlet, new_position))
         velocity_vector_list_Verlet = np.vstack((velocity_vector_list_Verlet, new_velocity))
+
     
     return position_vector_list_Verlet,velocity_vector_list_Verlet
 
@@ -184,10 +200,11 @@ R = 3400 * 10**3 #Radius of Mars
 h = 20000 * 10**3 #Altitude
 G = 6.67 * 10**(-11) #Gravitational Constant
 v0 = np.sqrt(G*M/(R+h)) #Velocity for circular Orbit
+ve = np.sqrt(2) * v0
 time_max = 2000000 #Max time for simulation considered
 dt = 1000 #Step size such that 2000 points considered
-position0 = np.array([[(R+h),0,(R+h)]]) #Initialize initial position SPECIFICALLY in this format
-velocity0 = np.array([[-v0/4, v0, v0/4]]) #Initialize initial velocity SPECIFICALLY in this format
+position0 = np.array([(R+h),0,(R+h)]) #Initialize initial position SPECIFICALLY in this format
+velocity0 = np.array([-v0/4, v0, v0/4]) #Initialize initial velocity SPECIFICALLY in this format
 position,velocity = Verlet(M, position0, velocity0, time_max, dt) #Find positions and velocity
 plot_3D_position(position, R)
 animation_plot(position, velocity, R)
