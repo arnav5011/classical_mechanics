@@ -87,15 +87,15 @@ def get_instant_wave_function(n,m,a,c,t, R, theta):
     t->instantaneous time
     R->mesh grid of radial and angular intervals
     theta->mesh grid of angular and radial intervals"""
-    
-    l = sc.jn_zeros(m,n)[-1]/a 
+    if m == 0:
+        l = 0
+    else:
+        l = sc.jn_zeros(m,n)[-1]/a 
     print(sc.jn_zeros(m,n)[-1])
     u = np.cos(m*theta) * np.cos(c*l*t)
     for i in range(R.shape[0]):
         for j in range(R.shape[1]):
             u[i,j] = u[i,j] * compute_bessel(n,l * R[i,j])
-    
-    print(u[R.shape[0]-1,R.shape[1]-1])
     return u
 
 def plot_wave(n, m, a, c, t_max, dt):
@@ -144,12 +144,12 @@ def plot_wave(n, m, a, c, t_max, dt):
         return [surf]
 
     #Create anumation
-    ani = FuncAnimation(fig, update, frames=frames, interval=10, blit=False)
+    ani = FuncAnimation(fig, update, frames=frames, interval=50, blit=False)
 
     #Show animation
     plt.show()
 
 #Test
-plot_wave(2,2,1,1,10,1)
+plot_wave(1,0,1,1,10,1)
 
 
